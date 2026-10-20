@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fff2f7">
+<title>Bloom & Heart — Mini game 20/10</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --pink: #ef76a7;
+  --pink-dark: #a83268;
+  --rose: #ffd5e5;
+  --blush: #fff2f7;
+  --ink: light-dark(#5c2942, #ffeaf3);
+  --muted: light-dark(#8d5d73, #d7a8bc);
+  --paper: light-dark(#fffafd, #2a1722);
+  --line: light-dark(#f2c9da, #654054);
+  --shadow: 0 16px 42px rgba(167, 57, 105, .12);
+  font-family: "Segoe UI", "Arial", "Noto Sans", sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--blush); color: var(--ink); }
+button { font: inherit; }
+.app-root {
+  min-height: 100vh;
+  width: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  background: light-dark(linear-gradient(145deg, #fff6fa 0%, #ffe8f1 48%, #fff7fb 100%), linear-gradient(145deg, #24131d, #321a2a 55%, #24131d));
+  color: var(--ink);
+  position: relative;
+  isolation: isolate;
+}
+.app-root::before, .app-root::after { content: "✿  ♡  ✿"; position: absolute; z-index: -1; color: light-dark(rgba(228,91,146,.16), rgba(255,153,194,.13)); font-size: clamp(34px, 6vw, 76px); letter-spacing: .25em; pointer-events: none; }
+.app-root::before { top: 100px; left: -25px; transform: rotate(-18deg); }
+.app-root::after { right: -25px; bottom: 100px; transform: rotate(18deg); }
+.shell { max-width: 1080px; margin: auto; padding: 24px 18px 52px; }
+@keyframes happyFlash { 0%,100% { filter:none; } 35% { filter: brightness(1.08) saturate(1.2); } }
+@keyframes prizePop { 0% { transform:scale(.4) rotate(-12deg); } 65% { transform:scale(1.22) rotate(5deg); } 100% { transform:scale(1) rotate(0); } }
+body.celebrating .app-root { animation: happyFlash .75s ease; }
+.prize-pop { display:inline-block; animation: prizePop .7s cubic-bezier(.2,.9,.2,1.3); }
+.sound-toggle { position: absolute; top: 16px; right: 18px; z-index: 5; border: 1px solid var(--line); border-radius: 999px; padding: 9px 12px; background: var(--paper); color: var(--pink-dark); font-weight: 750; cursor: pointer; box-shadow: var(--shadow); }
+.hero { text-align: center; padding: 22px 8px 20px; }
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; background: var(--paper); color: var(--pink-dark); font-weight: 750; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+h1 { font-size: clamp(32px, 6vw, 58px); line-height: 1.08; letter-spacing: -.04em; margin: 16px 0 10px; }
+.gradient { background: linear-gradient(90deg, #d94d8b, #f19bba, #b8477d); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero p { color: var(--muted); max-width: 620px; margin: 0 auto; line-height: 1.7; font-size: 15px; }
+.progress-card { max-width: 860px; margin: 12px auto 24px; padding: 18px; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); box-shadow: var(--shadow); }
+.progress-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+.progress-head strong { font-size: 15px; }
+.progress-head span { font-size: 13px; color: var(--muted); }
+.progress-track { height: 9px; border-radius: 20px; background: light-dark(#f9dce8, #4d2a3d); overflow: hidden; }
+.progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #e96fa4, #f6abc7); border-radius: inherit; transition: width .35s ease; }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+.step { display: flex; gap: 9px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 14px; color: var(--muted); font-size: 12px; min-width: 0; }
+.step .num { width: 28px; height: 28px; flex: 0 0 28px; display: grid; place-items: center; border-radius: 50%; background: light-dark(#ffe4ef, #4d2a3d); font-weight: 800; }
+.step.active { color: var(--pink-dark); border-color: var(--pink); background: light-dark(#fff0f6, #3c2030); }
+.step.done .num { background: #df6599; color: white; }
+.step b { display: block; font-size: 13px; color: var(--ink); }
+.stage { max-width: 860px; margin: 0 auto 22px; border: 1px solid var(--line); border-radius: 26px; padding: clamp(18px, 4vw, 30px); background: var(--paper); box-shadow: var(--shadow); }
+.stage-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.stage-kicker { color: var(--pink-dark); font-weight: 800; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+h2 { font-size: clamp(23px, 4vw, 31px); margin: 6px 0 5px; letter-spacing: -.025em; }
+.sub { color: var(--muted); line-height: 1.6; font-size: 14px; margin: 0; }
+.pill { white-space: nowrap; border-radius: 999px; padding: 8px 12px; background: light-dark(#ffebf3, #48283a); color: var(--pink-dark); font-size: 12px; font-weight: 800; }
+.question { padding: 17px; border: 1px solid var(--line); border-radius: 18px; margin: 12px 0; background: light-dark(#fff7fb, #321d2a); }
+.question h3 { font-size: 16px; line-height: 1.5; margin: 0 0 12px; }
+.answers { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; }
+.answer { border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); padding: 12px 13px; text-align: left; cursor: pointer; transition: .18s ease; min-height: 44px; }
+.answer:hover:not(:disabled) { border-color: var(--pink); transform: translateY(-1px); }
+.answer:disabled { cursor: default; opacity: .95; }
+.answer.correct { background: light-dark(#e6f8ed, #20392c); border-color: #56b77b; color: light-dark(#1f7042, #a9f0c3); }
+.answer.wrong { background: light-dark(#fff0f2, #46222b); border-color: #e37c90; color: light-dark(#a43c55, #ffb7c5); }
+.feedback { min-height: 24px; margin-top: 10px; font-size: 13px; font-weight: 700; line-height: 1.5; }
+.feedback.good { color: light-dark(#24844d, #9de4b8); }
+.feedback.bad { color: light-dark(#b84260, #ffafc2); }
+.btn { border: 0; border-radius: 13px; background: linear-gradient(100deg, #df5d98, #ef8db6); color: white; padding: 13px 18px; font-weight: 800; cursor: pointer; box-shadow: 0 8px 18px rgba(210,76,137,.2); transition: transform .18s ease, filter .18s ease; }
+.btn:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.03); }
+.btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.btn.secondary { background: transparent; color: var(--pink-dark); border: 1px solid var(--line); box-shadow: none; }
+.action-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+.small-note { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.memory-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 11px; max-width: 540px; margin: 18px auto; }
+.memory-card { aspect-ratio: 1 / 1; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(145deg, #f6a9c7, #e86f9f); color: white; cursor: pointer; font-size: clamp(23px, 5vw, 38px); display: grid; place-items: center; box-shadow: 0 5px 12px rgba(190,72,125,.13); transition: transform .2s ease, background .2s ease; }
+.memory-card:hover:not(:disabled) { transform: translateY(-2px); }
+.memory-card.revealed, .memory-card.matched { background: light-dark(#fff1f7, #3d2232); color: var(--pink-dark); border-color: #ed9cbd; }
+.memory-card.matched { box-shadow: inset 0 0 0 2px #77c998; }
+.memory-card:disabled { cursor: default; }
+.game-stat { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.stat { padding: 8px 12px; border-radius: 999px; background: light-dark(#fff0f6, #48283a); font-size: 13px; font-weight: 750; }
+.catch-area { position: relative; min-height: 300px; overflow: hidden; border: 1px dashed #e99cbb; border-radius: 20px; background: light-dark(radial-gradient(circle at 50% 20%, #fff 0, #fff0f6 70%), #321d2a); margin: 16px 0; touch-action: manipulation; }
+.catch-area::before { content: "✿"; position: absolute; top: 12px; left: 18px; font-size: 30px; color: #e8a2be; opacity: .65; }
+.catch-heart { position: absolute; border-radius: 18px; transition: transform .12s ease; animation-duration: var(--float-speed, 1.1s); }
+.catch-heart { position: absolute; border: 0; background: transparent; padding: 0; cursor: pointer; font-size: 34px; line-height: 1; filter: drop-shadow(0 4px 4px rgba(187,57,112,.18)); animation: floaty 1.1s ease-in-out infinite alternate; }
+.catch-heart:hover { filter: drop-shadow(0 5px 8px rgba(187,57,112,.3)); }
+.fx-particle { position: fixed; z-index: 99; pointer-events: none; font-size: 22px; animation: burst-up .9s ease-out forwards; filter: drop-shadow(0 3px 5px #d45d91aa); }
+@keyframes burst-up { 0% { opacity: 1; transform: translate(0,0) scale(.5) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.5) rotate(var(--rot)); } }
+.float-decor { position: fixed; z-index: 0; pointer-events: none; opacity: .32; animation: drift 7s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: translateY(0) rotate(-8deg); } to { transform: translateY(-18px) rotate(8deg); } }
+@keyframes floaty { from { transform: translateY(2px) rotate(-7deg); } to { transform: translateY(-7px) rotate(7deg); } }
+.timerbar { height: 9px; background: light-dark(#f8dce8, #4c293b); border-radius: 99px; overflow: hidden; margin: 10px 0; }
+.timerfill { height: 100%; width: 100%; background: linear-gradient(90deg, #f0a0c0, #df5c96); transition: width .1s linear; }
+.wheel-wrap { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(200px, .8fr); align-items: center; gap: 24px; }
+.wheel-box { position: relative; width: min(100%, 430px); margin: 0 auto; aspect-ratio: 1; }
+#wheel { display: block; width: 100%; height: 100%; filter: drop-shadow(0 12px 18px rgba(155,51,98,.17)); }
+.pointer { position: absolute; z-index: 2; top: -4px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 17px solid transparent; border-right: 17px solid transparent; border-top: 34px solid #a83268; filter: drop-shadow(0 2px 2px rgba(0,0,0,.15)); }
+.wheel-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 54px; height: 54px; border-radius: 50%; border: 5px solid #fff2f7; background: #c74d83; box-shadow: 0 3px 10px #a63e70aa; pointer-events: none; }
+.wheel-side { text-align: center; }
+.wheel-side .big-number { font-size: clamp(44px, 7vw, 70px); line-height: 1.05; font-weight: 900; color: var(--pink-dark); letter-spacing: -.05em; }
+.wheel-side p { color: var(--muted); line-height: 1.65; font-size: 14px; }
+.wheel-side .btn { width: 100%; max-width: 270px; }
+
+.gift-intro { text-align:center; padding:14px 12px; border-radius:18px; background:light-dark(#fff0f6,#3c2131); margin-bottom:16px; }
+.gift-values { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin:12px 0; }
+.gift-value { padding:8px 12px; border:1px dashed #e99cbb; border-radius:999px; background:var(--paper); color:var(--pink-dark); font-weight:850; }
+.gift-value.special-prize { background:linear-gradient(110deg,#fff0a8,#ffd1e7,#fff0a8); border:2px solid #e7ae38; color:#8b4a08; box-shadow:0 0 14px #ffd45a88; }
+.gift-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; max-width:420px; margin:14px auto; perspective:900px; }
+.gift-box { min-height:76px; aspect-ratio:1.18 / 1; position:relative; border:2px solid #ffffffc9; border-radius:13px; cursor:pointer; color:white; background:linear-gradient(145deg,#ffd7e7,#f18ab5 72%,#d95791); box-shadow:0 4px 9px #a8326822,inset 0 2px 5px #ffffff66; transition:transform .28s,filter .25s,opacity .3s; overflow:hidden; }
+.gift-box::before { content:""; position:absolute; left:calc(50% - 4px); top:0; bottom:0; width:8px; background:#ffe7a7; box-shadow:0 0 0 1px #fff2cf55; }
+.gift-box::after { content:""; position:absolute; left:0; right:0; top:19px; height:8px; background:#ffe7a7; }
+.gift-box .bow { position:absolute; top:2px; left:50%; z-index:1; transform:translateX(-50%); font-size:20px; filter:drop-shadow(0 2px 1px #9e315c55); }
+.gift-box .box-number { position:absolute; bottom:5px; left:0; right:0; font-size:9px; font-weight:850; text-shadow:0 1px 3px #8c2857; }
+.gift-box:hover:not(:disabled) { transform:translateY(-5px) rotate(-1deg); filter:brightness(1.05); }
+.gift-box:disabled { cursor:default; }
+.gift-box.chosen { animation:giftReveal .8s cubic-bezier(.2,.85,.2,1.25) both; background:linear-gradient(145deg,#ffe8a6,#f6a73d); color:#7b3d18; box-shadow:0 0 0 4px #ffe4a0,0 0 35px #f7b84d99; }
+.gift-box.chosen::before,.gift-box.chosen::after { opacity:.45; }
+.gift-box.revealed { background:light-dark(#fff0f6,#3c2131); color:var(--pink-dark); border:1px solid #ed9cbd; }
+.gift-box.revealed::before,.gift-box.revealed::after { opacity:.18; }
+.gift-box .value-label { position:absolute; z-index:2; inset:27px 2px auto; font-size:clamp(14px,2.5vw,19px); font-weight:950; }
+.gift-box.chosen .value-label { font-size:clamp(18px,3.5vw,24px); }
+.gift-box.value-flash { animation:valueTwinkle .22s ease-in-out infinite alternate; background:linear-gradient(145deg,#fff0b7,#ffb7d6 55%,#ee80b1); color:#9c3567; box-shadow:0 0 0 2px #ffe6a4,0 0 18px #ff9dc8aa; }
+@keyframes valueTwinkle { from{filter:brightness(1);transform:scale(1)} to{filter:brightness(1.32);transform:scale(1.045)} }
+@keyframes giftReveal { 0%{transform:rotateY(0) scale(1)} 35%{transform:rotateY(90deg) scale(.9)} 70%{transform:rotateY(0) scale(1.12)} 100%{transform:rotateY(0) scale(1)} }
+.gift-shuffle { animation:shuffleBox .72s cubic-bezier(.2,.8,.25,1) both; filter:brightness(1.12) drop-shadow(0 8px 9px #b82e6a55); }
+.gift-shuffling .gift-box { animation:shufflePulse .24s ease-in-out infinite alternate; }
+.gift-shuffling .gift-box:nth-child(3n+1){animation-delay:-.12s}.gift-shuffling .gift-box:nth-child(3n+2){animation-delay:-.25s}
+.gift-shuffle::before { animation:ribbonFlash .22s ease-in-out infinite alternate; }
+@keyframes shuffleBox { 0%{transform:translate(-7px,5px) rotate(-7deg) scale(.94)} 20%{transform:translate(13px,-10px) rotate(10deg) scale(1.08)} 45%{transform:translate(-12px,8px) rotate(-11deg) scale(.92)} 70%{transform:translate(9px,11px) rotate(7deg) scale(1.05)} 100%{transform:translate(0,0) rotate(0) scale(1)} }
+@keyframes shufflePulse { from{filter:brightness(1); transform:translateY(0) rotate(-1deg)} to{filter:brightness(1.18); transform:translateY(-5px) rotate(1deg)} }
+@keyframes ribbonFlash { from{opacity:.55} to{opacity:1; box-shadow:0 0 18px #fff3a6} }
+.gift-box.prize-pop { animation:prizeBurst 1.05s cubic-bezier(.16,1,.3,1) both; }
+@keyframes prizeBurst { 0%{transform:scale(.7) rotate(-8deg);filter:brightness(1)} 35%{transform:scale(1.22) rotate(5deg);filter:brightness(1.7) drop-shadow(0 0 24px #ffe17a)} 60%{transform:scale(.94) rotate(-3deg)} 80%{transform:scale(1.12) rotate(2deg);filter:brightness(1.35) drop-shadow(0 0 35px #ffcf5c)} 100%{transform:scale(1) rotate(0);filter:brightness(1.08) drop-shadow(0 0 20px #ffcf5c)} }
+@media(max-width:520px){.gift-grid{gap:7px;max-width:360px}.gift-box{min-height:68px;border-radius:11px}.gift-box .bow{font-size:18px}.gift-box .box-number{font-size:8px;bottom:4px}.gift-box .value-label{inset:25px 1px auto;font-size:14px}}
+
+.result-card { padding: 16px; border: 1px solid var(--line); border-radius: 17px; background: light-dark(#fff0f6, #3c2131); margin: 14px 0; }
+.result-card strong { display: block; margin-bottom: 6px; }
+.code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; font-size: 12px; }
+footer { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.7; padding: 8px 10px 20px; }
+[hidden] { display: none !important; }
+@media (max-width: 620px) {
+  .shell { padding: 14px 12px 32px; }
+  .hero { padding-top: 16px; }
+  .steps { gap: 6px; }
+  .step { padding: 8px 6px; flex-direction: column; text-align: center; gap: 5px; }
+  .step b { font-size: 11px; }
+  .step span:last-child { font-size: 10px; }
+  .answers { grid-template-columns: 1fr; }
+  .stage-head { flex-direction: column; }
+  .memory-grid { gap: 7px; }
+  .memory-card { border-radius: 12px; }
+  .wheel-wrap { grid-template-columns: 1fr; }
+  .wheel-box { width: min(100%, 360px); }
+  .catch-area { min-height: 270px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+
+/* Màn chào mừng nhập tên và bó hoa */
+body:not(.game-started) { overflow:hidden; }
+.app-root { display:none; }
+body.game-started .app-root { display:block; }
+.name-gate { position:fixed; inset:0; z-index:1000; overflow:auto; display:grid; place-items:center; padding:22px 14px; color:#fff5fa; background:radial-gradient(ellipse at 50% 0%,#b83d87 0%,#5a1249 48%,#260d2a 100%); }
+.name-gate::before { content:'✦  ✧  ·  ✦  ✧'; position:fixed; inset:8% 0 auto; text-align:center; font-size:clamp(20px,4vw,40px); letter-spacing:1.4em; color:#ffd7e9; opacity:.5; pointer-events:none; }
+.gate-inner { position:relative; width:min(100%,760px); text-align:center; padding:10px 10px 22px; }
+.gate-tag { letter-spacing:.22em; font-size:12px; font-weight:800; color:#ffd8e9; }
+.gate-title { margin:12px 0 8px; font-size:clamp(30px,6vw,52px); letter-spacing:.02em; color:#fff8fb; }
+.gate-desc { max-width:560px; margin:0 auto 20px; color:#f5cfe0; line-height:1.65; font-size:14px; }
+.gate-bouquet { min-height:300px; display:grid; place-items:center; position:relative; isolation:isolate; filter:drop-shadow(0 10px 20px #ff9ec855); }
+.gate-bouquet::before{content:'✦  ✧  ✿  ✧  ✦';position:absolute;z-index:-1;color:#ffd9eb;font-size:clamp(16px,3vw,26px);letter-spacing:.7em;opacity:.6;animation:petalGlow 3.5s ease-in-out infinite alternate}.gate-bouquet .flower-sprig svg{filter:drop-shadow(0 4px 7px #2b082b55)}
+@keyframes petalGlow{from{transform:scale(.92);opacity:.25}to{transform:scale(1.08);opacity:.72}}
+.gate-bouquet .flower-sprig { display:block; width:clamp(190px,32vw,300px); max-width:100%; animation:bloomIn .85s cubic-bezier(.2,.9,.2,1.2) both; }
+.gate-bouquet .flower-sprig svg { display:block; width:100%; height:auto; overflow:visible; }
+@keyframes bloomIn { from{opacity:0;transform:translateY(25px) scale(.3) rotate(-18deg)} to{opacity:1;transform:translateY(0) scale(1) rotate(0)} }
+.gate-name { width:min(100%,470px); margin:0 auto 14px; padding:12px 16px; border:1px solid #ffc7e0; border-radius:14px; background:#39112f99; color:white; font-size:20px; font-weight:800; text-align:center; outline:none; box-shadow:inset 0 0 0 1px #ffffff12; }
+.gate-name::placeholder { color:#d9a4c2; font-size:15px; font-weight:500; }
+.flower-keyboard { width:min(100%,650px); margin:12px auto 18px; display:flex; flex-direction:column; gap:6px; }
+.flower-key-row { display:flex; justify-content:center; gap:5px; }
+.flower-key { flex:1 1 0; min-width:0; max-width:57px; min-height:61px; padding:4px 1px 3px; border:1px solid #ffffff2b; border-radius:9px; background:linear-gradient(160deg,#52193f,#35112f); color:white; cursor:pointer; box-shadow:0 3px 0 #21091f; transition:transform .12s,background .12s; }
+.flower-key:hover { background:linear-gradient(160deg,#8b2a65,#4a1741); transform:translateY(-2px); }
+.flower-key:active { transform:translateY(2px); box-shadow:none; }
+.flower-key .key-flower { display:grid; place-items:center; width:100%; min-height:43px; filter:drop-shadow(0 3px 3px #16081766); }
+.flower-key .key-flower svg{width:clamp(35px,5vw,49px);height:45px;overflow:visible;transition:transform .18s;transform-origin:50% 80%}.flower-key:hover .key-flower svg{transform:translateY(-2px) rotate(-5deg) scale(1.08)}
+.flower-key:nth-child(3n) .key-flower svg{filter:drop-shadow(0 0 4px #ffb5dc66)}
+.flower-key { min-height:68px; display:flex; flex-direction:column; align-items:center; justify-content:space-between; }
+.flower-key .key-letter { align-self:flex-start; padding-left:3px; font-size:12px; }
+.flower-key .key-flower::after { content:''; display:none; }
+.flower-key .key-letter { display:block; font-size:11px; font-weight:850; opacity:.9; }
+.flower-key.action-key { max-width:none; flex:1.4; min-height:43px; font-size:12px; font-weight:800; }
+.gate-actions { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+.gate-btn { border:0; border-radius:999px; padding:13px 22px; background:linear-gradient(100deg,#ff6eaa,#f6a3c8); color:#53143b; font-weight:900; cursor:pointer; box-shadow:0 8px 24px #e94b9560; }
+.gate-btn:disabled { opacity:.45; cursor:not-allowed; }
+.gate-greeting { max-width:600px; margin:8px auto 18px; color:#ffe0ec; font-size:clamp(14px,2.4vw,18px); line-height:1.8; }
+.gate-greeting strong { color:#fff; font-size:1.25em; }
+.gate-hint { color:#d9a5c0; font-size:12px; margin-top:12px; }
+@media(max-width:480px){.gate-bouquet{min-height:220px}.gate-bouquet .flower-sprig{width:min(68vw,250px)}.flower-keyboard{gap:5px}.flower-key-row{gap:3px}.flower-key{min-height:55px;border-radius:7px}.flower-key .key-flower{min-height:34px}.flower-key .key-flower svg{width:34px;height:35px}.flower-key .key-letter{font-size:10px}.gate-inner{padding-top:8px}.gate-bouquet{min-height:100px}}
+
+</style>
+</head>
+<body>
+<section class="name-gate" id="nameGate" aria-label="Chào mừng, nhập tên để nhận bó hoa">
+  <div class="gate-inner">
+    <div class="gate-tag">✿ BLOOM & HEART · 20/10 ✿</div>
+    <h1 class="gate-title">Một bó hoa dành riêng cho bạn</h1>
+    <p class="gate-desc">Hãy gõ tên của bạn bằng bàn phím hoa nhé. Mỗi phím là một bông hoa nhỏ — khi hoàn thành, những bông hoa sẽ kết thành bó hoa và gửi bạn lời chúc 20/10 ngọt ngào. 🌷</p>
+    <div class="gate-bouquet" id="gateBouquet" aria-live="polite">🌷 🌸 🌼</div>
+    <input class="gate-name" id="playerName" maxlength="24" autocomplete="name" placeholder="Tên của bạn…" aria-label="Tên của bạn">
+    <div class="flower-keyboard" id="flowerKeyboard" aria-label="Bàn phím hoa"></div>
+    <div class="gate-actions"><button class="gate-btn" id="bloomButton" disabled>💐 Kết thành bó hoa</button></div>
+    <div class="gate-greeting" id="gateGreeting" hidden></div>
+    <div class="gate-actions"><button class="gate-btn" id="enterGameButton" hidden>🌸 Bắt đầu trò chơi</button></div>
+    <p class="gate-hint" id="gateHint">Bạn có thể gõ bằng bàn phím thật hoặc chạm vào từng phím hoa.</p>
+  </div>
+</section>
+
+<div class="app-root">
+  <button class="sound-toggle" id="soundToggle" type="button" aria-pressed="true">🔊 Âm thanh: bật</button>
+  <span class="float-decor" style="top:14%;left:4%;font-size:30px">🌸</span><span class="float-decor" style="top:35%;right:4%;font-size:26px;animation-delay:-2s">☁️</span><span class="float-decor" style="bottom:18%;left:6%;font-size:28px;animation-delay:-4s">🦋</span>
+  <main class="shell">
+    <header class="hero">
+      <div class="eyebrow">🌷 20/10 · Ngày Phụ nữ Việt Nam</div>
+      <h1>Bloom <span class="gradient">& Heart</span></h1>
+      <p>Vượt qua ba thử thách nhỏ để mở khóa màn chọn hộp quà bí mật. Chúc bạn có một ngày 20/10 thật ngọt ngào! ♡</p>
+    </header>
+    <section class="progress-card" aria-label="Tiến trình trò chơi">
+      <div class="progress-head"><strong>🌸 Hành trình săn quà</strong><span id="progressLabel">Đã hoàn thành 0/3 trò chơi</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="steps">
+        <div class="step active" id="step1"><span class="num">1</span><span><b>Đố vui 20/10</b>2/3 câu đúng</span></div>
+        <div class="step" id="step2"><span class="num">2</span><span><b>Lật thẻ</b>Ghép 4 cặp</span></div>
+        <div class="step" id="step3"><span class="num">3</span><span><b>Bắt tim</b>10 tim / 15 giây</span></div>
+      </div>
+    </section>
+
+    <section class="stage" id="quizStage">
+      <div class="stage-head"><div><div class="stage-kicker">Thử thách 01</div><h2>Đố vui ngày 20/10</h2><p class="sub">Chọn đáp án cho từng câu — kết quả sẽ hiện ngay sau mỗi lần chọn.</p></div><span class="pill" id="quizScore">Đúng 0/3</span></div>
+      <div id="quizQuestions"></div>
+      <div class="action-row"><span class="small-note" id="quizMessage" aria-live="polite">Cần đúng ít nhất 2/3 câu để mở khóa trò tiếp theo.</span><button class="btn" id="quizContinue" disabled>Tiếp tục →</button></div>
+    </section>
+
+    <section class="stage" id="memoryStage" hidden>
+      <div class="stage-head"><div><div class="stage-kicker">Thử thách 02</div><h2>Lật thẻ tìm cặp</h2><p class="sub">Lật 2 thẻ mỗi lượt và tìm đủ 4 cặp hình giống nhau.</p></div><span class="pill" id="memoryScore">Đã ghép 0/4 cặp</span></div>
+      <div class="game-stat"><span class="stat" id="movesStat">Lượt lật: 0</span><span class="stat">8 thẻ · 4 cặp</span></div>
+      <div class="memory-grid" id="memoryGrid"></div>
+      <div class="action-row"><span class="small-note" id="memoryMessage" aria-live="polite">Mẹo nhỏ: hãy ghi nhớ vị trí các hình đã lật nhé!</span><button class="btn" id="memoryContinue" disabled>Đến thử thách bắt tim →</button></div>
+    </section>
+
+    <section class="stage" id="catchStage" hidden>
+      <div class="stage-head"><div><div class="stage-kicker">Thử thách 03</div><h2>Bắt tim trong 15 giây</h2><p class="sub">Chạm vào những trái tim xuất hiện trong khu vực chơi. Bắt được 10 tim để mở khóa màn chọn hộp quà.</p></div><span class="pill" id="catchScore">💗 0/10 tim</span></div>
+      <div class="game-stat"><span class="stat" id="timerText">⏱ 15 giây</span><span class="stat">Mục tiêu: 10 tim</span></div>
+      <div class="timerbar"><div class="timerfill" id="timerFill"></div></div>
+      <div class="catch-area" id="catchArea" aria-label="Khu vực bắt tim"><div style="position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:13px;pointer-events:none" id="catchHint">Nhấn “Bắt đầu” để chơi 💞</div></div>
+      <div class="action-row"><span class="small-note" id="catchMessage" aria-live="polite">Sẵn sàng chưa nào?</span><button class="btn" id="catchStart">Bắt đầu 15 giây</button></div>
+    </section>
+
+    <section class="stage" id="wheelStage" hidden>
+      <div class="stage-head"><div><div class="stage-kicker">Phần thưởng đặc biệt</div><h2>Chọn hộp quà bí mật 🎁</h2><p class="sub">Bạn đã vượt qua cả 3 thử thách! Hãy ghi nhớ giá trị các hộp, xem chúng xáo trộn, rồi chọn đúng một hộp để mở quà.</p></div><span class="pill">🔓 Đã mở khóa</span></div>
+      <div class="gift-intro"><div class="small-note">BƯỚC <span id="giftStep">1</span> / 3</div><p id="giftMessage">🎁 Có 9 hộp quà: 5k × 1, 20k × 2, 50k × 3, 80k × 2 và 1 HỘP ĐẶC BIỆT 100k! Ghi nhớ thật nhanh rồi chọn một hộp may mắn nhé 💗</p><div class="gift-values" id="giftValues"><span class="gift-value">5k × 1</span><span class="gift-value">20k × 2</span><span class="gift-value">50k × 3</span><span class="gift-value">80k × 2</span><span class="gift-value special-prize">🌟 HỘP ĐẶC BIỆT 100k × 1</span></div><p class="small-note">🎀 Một hộp duy nhất chứa phần quà đặc biệt 100k — hãy theo dõi thật kỹ khi các hộp đổi chỗ!</p><button class="btn" id="giftAction">💖 Bắt đầu chọn quà</button></div>
+      <div class="gift-grid" id="giftGrid" aria-label="Chín hộp quà bí mật"></div>
+      <div class="result-card" id="ticketCard" hidden><strong>🎟 Phiếu kết quả để gửi người tổ chức</strong><div class="code" id="ticketCode"></div><p class="small-note">Phiếu này chỉ ghi nhận kết quả hiển thị trong trình duyệt, không phải xác minh từ máy chủ.</p><div class="action-row"><button class="btn secondary" id="copyTicket">Sao chép phiếu</button><span class="small-note" id="copyStatus" aria-live="polite"></span></div></div>
+    </section>
+    <footer>Made with ♡ for 20/10 · Xu là phần thưởng hiển thị. Người tổ chức cần tự xác minh phiếu trước khi trao thưởng; phiên bản này chưa có máy chủ chống gian lận.</footer>
+  </main>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  // Màn chào mừng: gõ tên bằng bàn phím hoa, sau đó kết thành bó hoa.
+  const flowerKeys = [
+    ['Q','🌼'],['W','🪻'],['E','💮'],['R','🌸'],['T','🌼'],['Y','🌷'],['U','🌼'],['I','🪻'],['O','🤍'],['P','🌻'],
+    ['A','💐'],['S','🌷'],['D','🌷'],['F','🤍'],['G','🌹'],['H','🌸'],['J','🌺'],['K','🤍'],['L','🌺'],
+    ['Z','🌼'],['X','🪻'],['C','🤍'],['V','🌷'],['B','💮'],['N','🌻'],['M','💮']
+  ];
+  const keyboard = $('flowerKeyboard'), nameInput = $('playerName');
+  // Hoa vector riêng cho từng phím: cánh hoa, nhụy, thân và lá, không phụ thuộc emoji của hệ điều hành.
+  function drawKeyFlower(index){
+    const palettes=[['#fff8fb','#f4a6c7','#f2cf55'],['#ffb9d6','#f47fae','#f8d66a'],['#fffdfb','#e9d9ed','#f2c84b'],['#ff8fbe','#ffd1e5','#ffe06a'],['#fff8ff','#f4c4db','#dca95a'],['#ffd3e7','#ed82b5','#f7d35b'],['#fff7fc','#f6a6ca','#f1c94e'],['#ffafd1','#e875ac','#f6d45d']];
+    const c=palettes[index%palettes.length], petals=5+(index%4), rot=index*17%35;
+    let pet=''; for(let i=0;i<petals;i++){const a=i*360/petals;pet+=`<ellipse cx="24" cy="12" rx="5.4" ry="9.2" transform="rotate(${a} 24 25)" fill="${i%2?c[0]:c[1]}" stroke="${c[1]}" stroke-width=".65"/>`;}
+    return `<svg viewBox="0 0 48 58" aria-hidden="true"><defs><linearGradient id="stem${index}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#80d69a"/><stop offset="1" stop-color="#277b51"/></linearGradient></defs><path d="M24 29 Q23 42 26 55" fill="none" stroke="url(#stem${index})" stroke-width="2.1" stroke-linecap="round"/><path d="M24 43 Q11 31 9 40 Q15 49 24 43Z" fill="#70c889" stroke="#3c9a63" stroke-width=".7"/><path d="M25 48 Q37 35 39 43 Q34 51 25 48Z" fill="#91d99a" stroke="#3c9a63" stroke-width=".7"/><g transform="rotate(${rot} 24 25)">${pet}<circle cx="24" cy="25" r="6.2" fill="${c[2]}" stroke="#d59b48" stroke-width=".8"/><circle cx="22" cy="23" r="1.1" fill="#fff6c9"/><circle cx="27" cy="27" r=".9" fill="#fff6c9"/></g><path d="M24 32 Q20 38 22 43" fill="none" stroke="#d5f0c5" stroke-width=".8" opacity=".8"/></svg>`;
+  }
+  const keyRows = [flowerKeys.slice(0,10), flowerKeys.slice(10,19), flowerKeys.slice(19)];
+  let flowerIndex=0;
+  keyRows.forEach((row,ri) => {
+    const line=document.createElement('div'); line.className='flower-key-row';
+    row.forEach(([letter,flower])=>{const b=document.createElement('button');b.type='button';b.className='flower-key';const idx=flowerIndex++;b.innerHTML=`<span class="key-flower">${drawKeyFlower(idx)}</span><span class="key-letter">${letter}</span>`;b.setAttribute('aria-label',`Gõ chữ ${letter}, hoa ${flower}`);b.addEventListener('click',()=>{nameInput.value+=letter.toLowerCase();nameInput.dispatchEvent(new Event('input'));nameInput.focus();});line.appendChild(b);});
+    if(ri===2){const del=document.createElement('button');del.type='button';del.className='flower-key action-key';del.textContent='⌫ Xóa';del.addEventListener('click',()=>{nameInput.value=nameInput.value.slice(0,-1);nameInput.dispatchEvent(new Event('input'));nameInput.focus();});line.appendChild(del);}
+    keyboard.appendChild(line);
+  });
+  const spaceRow=document.createElement('div');spaceRow.className='flower-key-row';
+  const space=document.createElement('button');space.type='button';space.className='flower-key action-key';space.textContent='✿ Dấu cách';space.addEventListener('click',()=>{nameInput.value+=' ';nameInput.dispatchEvent(new Event('input'));nameInput.focus();});spaceRow.appendChild(space);keyboard.appendChild(spaceRow);
+  nameInput.addEventListener('input',()=>{$('bloomButton').disabled=!nameInput.value.trim();$('gateHint').textContent=nameInput.value.trim()?'Tên đẹp quá! Nhấn “Kết thành bó hoa” để nhận lời chúc nhé.':'Bạn có thể gõ bằng bàn phím thật hoặc chạm vào từng phím hoa.';});
+  document.addEventListener('keydown',e=>{if(document.body.classList.contains('game-started'))return;if(e.key==='Enter'&&!$('bloomButton').disabled){e.preventDefault();$('bloomButton').click();}});
+  $('bloomButton').addEventListener('click',()=>{
+    const name=nameInput.value.trim().replace(/\s+/g,' ');if(!name)return;
+    const blossoms=[...name].filter(ch=>/[a-zA-ZÀ-ỹ]/.test(ch)).map(ch=>{const k=flowerKeys.find(([letter])=>letter.toLowerCase()===ch.toLowerCase());return k?k[1]:'🌸';});
+    const unique=[...blossoms];while(unique.length<5)unique.push(['🌷','🌸','🌼','🌺','💮'][unique.length%5]);
+    $('gateBouquet').innerHTML=`<span class="flower-sprig" aria-label="Bó hoa hồng tặng ${name}"><svg viewBox="0 0 340 370" role="img" aria-label="Bó hoa màu hồng được buộc nơ">
+      <defs><linearGradient id="wrapPink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0f7"/><stop offset=".55" stop-color="#f7b8d2"/><stop offset="1" stop-color="#e98bb7"/></linearGradient><linearGradient id="ribbon" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff80ad"/><stop offset="1" stop-color="#d92f68"/></linearGradient></defs>
+      <g fill="none" stroke="#3e9b68" stroke-width="3.5" stroke-linecap="round"><path d="M170 306L93 68M170 306L125 43M170 306L164 25M170 306L210 53M170 306L250 72M170 306L75 117M170 306L228 112M170 306L270 145"/><path d="M132 194q-29-22-38-3q22 21 38 3M189 218q29-28 42-9q-17 27-42 9M154 158q-25-26-39-10q14 25 39 10M207 176q25-23 38-6q-17 24-38 6" fill="#5fbd7a" stroke="none"/></g>
+      <g transform="translate(92 65)"><g fill="#f5a8c6"><ellipse cy="-13" rx="10" ry="17"/><ellipse cy="13" rx="10" ry="17"/><ellipse cx="-13" rx="17" ry="10"/><ellipse cx="13" rx="17" ry="10"/></g><circle r="8" fill="#f7d64f"/><circle r="3" fill="#fff4b4"/></g>
+      <g transform="translate(124 42)"><g fill="#fff7fb" stroke="#f5c9dd" stroke-width="2"><circle cy="-10" r="13"/><circle cx="10" cy="-3" r="13"/><circle cx="6" cy="9" r="13"/><circle cx="-7" cy="10" r="13"/><circle cx="-12" cy="-2" r="13"/></g><circle r="8" fill="#f4d34e"/></g>
+      <g transform="translate(164 25)"><g fill="#fff8fb" stroke="#f5c8dc" stroke-width="2"><circle cy="-11" r="13"/><circle cx="11" cy="-3" r="13"/><circle cx="7" cy="9" r="13"/><circle cx="-7" cy="10" r="13"/><circle cx="-12" cy="-2" r="13"/></g><circle r="7" fill="#f7dbe8"/></g>
+      <g transform="translate(210 53)"><g fill="#f6a0c0" stroke="#e980aa" stroke-width="1.5"><path d="M0-22L5-12L17-17L13-5L24 0L13 6L17 18L5 13L0 24L-5 13L-17 18L-13 6L-24 0L-13-5L-17-17L-5-12Z"/></g><circle r="12" fill="#7b3c2d"/><g fill="#e9bd62"><circle cx="-5" cy="-4" r="2"/><circle cx="4" cy="-5" r="2"/><circle cx="5" cy="4" r="2"/><circle cx="-4" cy="5" r="2"/><circle r="2" fill="#f6db8a"/></g></g>
+      <g transform="translate(250 72)"><g fill="#f9b1cd" stroke="#e78ab0" stroke-width="1.5"><path d="M0-22L5-12L17-17L13-5L24 0L13 6L17 18L5 13L0 24L-5 13L-17 18L-13 6L-24 0L-13-5L-17-17L-5-12Z"/></g><circle r="12" fill="#81422e"/><g fill="#e9bd62"><circle cx="-5" cy="-4" r="2"/><circle cx="4" cy="-5" r="2"/><circle cx="5" cy="4" r="2"/><circle cx="-4" cy="5" r="2"/></g></g>
+      <g transform="translate(228 112)" fill="#ef78ac" stroke="#d94c8b" stroke-width="2"><circle cx="-9" r="13"/><circle cx="10" cy="-5" r="13"/><path d="M-16 4q9-17 17 0q-1 11-10 10q-7-2-7-10M3-1q9-17 17 0q-1 11-10 10q-7-2-7-10" fill="#ffb3d0"/></g>
+      <g transform="translate(75 117) rotate(-23)"><path d="M0 26Q-26 2-17-20Q2-15 0 26Z" fill="#ff9fca"/><path d="M4 25Q23 2 16-18Q-2-12 4 25Z" fill="#ffd1e5"/><path d="M0 25L0-15" stroke="#e46d9f" stroke-width="2"/></g>
+      <g transform="translate(270 145) rotate(20)"><path d="M0 12Q-15-4-7-17Q8-9 0 12Z" fill="#f48cb8"/><path d="M1 12Q17-1 12-12Q-1-6 1 12Z" fill="#ffc8df"/></g>
+      <path d="M48 150L292 150L216 260L244 346L96 346L124 260Z" fill="url(#wrapPink)" stroke="#ffe4f0" stroke-width="3"/>
+      <path d="M48 150L170 177L292 150L216 260L124 260Z" fill="#fff0f7" opacity=".88"/><path d="M170 177L170 345M84 176L139 260L110 340M256 176L201 260L230 340" fill="none" stroke="#fff6fa" stroke-width="2" opacity=".8"/>
+      <g transform="translate(170 273)"><path d="M-9 0C-55-36-86-7-58 12C-40 23-21 12-9 4Z" fill="url(#ribbon)" stroke="#c82c62" stroke-width="2"/><path d="M9 0C55-36 86-7 58 12C40 23 21 12 9 4Z" fill="url(#ribbon)" stroke="#c82c62" stroke-width="2"/><path d="M-11 9L-24 76L-1 56L10 81L11 9Z" fill="#e94579" stroke="#c82c62" stroke-width="2"/><path d="M11 9L22 69L39 52L29 7Z" fill="#f35d8c" stroke="#c82c62" stroke-width="2"/><ellipse rx="13" ry="11" fill="#d92f68" stroke="#b82055" stroke-width="2"/></g>
+    </svg></span>`;
+    $('gateGreeting').innerHTML=`Thân tặng bạn <strong>${name.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}</strong><br>Chúc bạn ngày 20/10 luôn rạng rỡ như hoa, dịu dàng mà mạnh mẽ, được yêu thương thật nhiều và mọi điều mong ước đều nở rộ. Chúc bạn luôn vui vẻ, tự tin và học tiếng Trung thật giỏi nhé! 💗`;
+    $('gateGreeting').hidden=false;$('enterGameButton').hidden=false;$('bloomButton').hidden=true;$('gateHint').textContent='Bó hoa của riêng bạn đã sẵn sàng 🌸';
+    // Điểm nhấn khi bó hoa hoàn thành: chuông chúc mừng tươi vui và hoa giấy.
+    celebrate(window.innerWidth / 2, Math.min(window.innerHeight * .38, 320));
+  });
+  $('enterGameButton').addEventListener('click',()=>{document.body.classList.add('game-started');$('nameGate').hidden=true;try{startMusic();}catch(_){}});
+
+  // Âm thanh tổng hợp bằng Web Audio, không cần tải tệp ngoài.
+  let soundOn = true, audioCtx = null, musicTimer = null, musicStep = 0;
+  const musicNotes = [523,659,784,659,587,698,880,698,523,659,784,1047,880,784,659,587];
+  function startMusic() {
+    if (!soundOn || musicTimer) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+      audioCtx ||= new AC(); if (audioCtx.state === 'suspended') audioCtx.resume();
+      // Nhạc nền vui nhộn tạo trực tiếp bằng Web Audio, không cần tệp ngoài.
+      musicTimer = window.setInterval(() => {
+        if (!soundOn || !audioCtx) return;
+        const n = musicNotes[musicStep++ % musicNotes.length];
+        if (musicStep % 8 !== 3 && musicStep % 8 !== 7) tone(n, .22, 'triangle', .048);
+        if (musicStep % 4 === 0) tone(n / 2, .30, 'sine', .024, .025);
+        if (musicStep % 8 === 0) tone(110, .10, 'sine', .035);
+      }, 285);
+    } catch (_) {}
+  }
+  function stopMusic() { if (musicTimer) { clearInterval(musicTimer); musicTimer = null; } }
+  function tone(freq=660, duration=.13, type='triangle', volume=.105, delay=0) {
+    if (!soundOn) return;
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      audioCtx ||= new AC();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+      gain.gain.setValueAtTime(.0001, audioCtx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(volume, audioCtx.currentTime + delay + .015);
+      gain.gain.exponentialRampToValueAtTime(.0001, audioCtx.currentTime + delay + duration);
+      osc.connect(gain); gain.connect(audioCtx.destination); osc.start(audioCtx.currentTime + delay); osc.stop(audioCtx.currentTime + delay + duration + .02);
+    } catch (_) {}
+  }
+  function jingle(kind='success') {
+    const notes = kind === 'error' ? [330,247,196] : kind === 'spin' ? [523,659,784,988,1175,988,1175,1397] : [659,784,988,1319,1175,1319,1568];
+    notes.forEach((n,i)=>tone(n, kind==='spin'?.12:.17, kind==='error'?'square':'triangle', kind==='error'?.075:.105, i*(kind==='spin'?.075:.085)));
+    if (kind !== 'error') {
+      tone(1047,.22,'sine',.065,.16);
+      tone(1319,.25,'sine',.055,.30);
+    }
+  }
+  function celebrate(x=window.innerWidth/2,y=window.innerHeight/2){
+    document.body.classList.remove('celebrating'); void document.body.offsetWidth; document.body.classList.add('celebrating');
+    window.setTimeout(()=>document.body.classList.remove('celebrating'),850);
+    burst(x,y,['🎉','💗','🌸','✨','🎁','⭐','🦋','🌷'],42);
+    window.setTimeout(()=>burst(Math.random()*window.innerWidth,Math.random()*window.innerHeight*.65,['🎊','💖','✨','🌼'],20),180);
+    jingle('success');
+  }
+  function eClientX(el){return el.getBoundingClientRect().left+el.offsetWidth/2;}
+  function eClientY(el){return el.getBoundingClientRect().top+el.offsetHeight/2;}
+  function burst(x,y,items=['✨','💗','🌸','⭐'],count=9) {
+    for (let i=0;i<count;i++) {
+      const el=document.createElement('span'); el.className='fx-particle'; el.textContent=items[Math.floor(Math.random()*items.length)];
+      el.style.left=`${x}px`; el.style.top=`${y}px`; el.style.setProperty('--dx',`${(Math.random()-.5)*150}px`); el.style.setProperty('--dy',`${-25-Math.random()*115}px`); el.style.setProperty('--rot',`${(Math.random()-.5)*100}deg`);
+      document.body.appendChild(el); window.setTimeout(()=>el.remove(),1000);
+    }
+  }
+  $('soundToggle').addEventListener('click',()=>{ soundOn=!soundOn; $('soundToggle').textContent=soundOn?'🔊 Âm thanh: bật':'🔇 Âm thanh: tắt'; $('soundToggle').setAttribute('aria-pressed',String(soundOn)); if(soundOn) { startMusic(); jingle(); } else stopMusic(); });
+  // Trình duyệt chỉ cho phép phát âm thanh sau tương tác đầu tiên của người chơi.
+  document.addEventListener('pointerdown', startMusic, { once: true });
+  document.addEventListener('keydown', startMusic, { once: true });
+  document.addEventListener('click',(e)=>{ if(e.target.closest('button') && !e.target.closest('#soundToggle')) { tone(740,.07,'square',.055); tone(988,.06,'triangle',.035,.035); } });
+  const completed = [false, false, false];
+  let activeStage = 0;
+  const stageEls = [$('quizStage'), $('memoryStage'), $('catchStage'), $('wheelStage')];
+  function setStage(index) {
+    activeStage = index;
+    if (index === 3 && typeof setupGifts === 'function') setupGifts();
+    stageEls.forEach((el, i) => el.hidden = i !== index);
+    updateProgress();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function updateProgress() {
+    const count = completed.filter(Boolean).length;
+    $('progressLabel').textContent = `Đã hoàn thành ${count}/3 trò chơi`;
+    $('progressFill').style.width = `${count / 3 * 100}%`;
+    completed.forEach((done, i) => {
+      const step = $('step' + (i + 1));
+      step.classList.toggle('done', done);
+      step.classList.toggle('active', !done && i === count);
+      step.querySelector('.num').textContent = done ? '✓' : String(i + 1);
+    });
+  }
+
+  // Quiz: each answer is evaluated immediately, and every question locks after selection.
+  const questions = [
+    { q: 'Ngày Phụ nữ Việt Nam được tổ chức vào ngày nào?', a: ['8/3', '20/10', '20/11', '1/6'], correct: 1, explain: 'Chính xác! Ngày Phụ nữ Việt Nam là 20/10.' },
+    { q: 'Món quà tinh thần nào thường khiến người nhận vui nhất?', a: ['Sự quan tâm chân thành', 'Chỉ cần quà thật đắt', 'Không cần lời chúc', 'Quên mất ngày đặc biệt'], correct: 0, explain: 'Đúng rồi! Sự quan tâm chân thành luôn rất đáng quý.' },
+    { q: 'Hôm nay 20/10, bạn đang mong chờ điều gì nhất?', a: ['Một món quà bất ngờ 🎁', 'Một lời chúc thật dễ thương 💌', 'Được đi chơi và ăn ngon 🍰', 'Chỉ cần một ngày thật vui 🌷'], correct: 0, interactive: true, explain: 'Mỗi mong đợi đều đáng yêu cả! Chúc điều bạn mong sẽ thành hiện thực nhé 💗' }
+  ];
+  const quizAnswers = Array(questions.length).fill(null);
+  const quizHost = $('quizQuestions');
+  questions.forEach((question, qi) => {
+    const card = document.createElement('article'); card.className = 'question';
+    const title = document.createElement('h3'); title.textContent = `${qi + 1}. ${question.q}`; card.appendChild(title);
+    const answers = document.createElement('div'); answers.className = 'answers';
+    const feedback = document.createElement('div'); feedback.className = 'feedback'; feedback.id = `feedback${qi}`; feedback.setAttribute('aria-live','polite');
+    question.a.forEach((answer, ai) => {
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'answer'; button.textContent = `${String.fromCharCode(65 + ai)}. ${answer}`;
+      button.addEventListener('click', () => {
+        if (quizAnswers[qi] !== null) return;
+        quizAnswers[qi] = ai;
+        [...answers.children].forEach((b, bi) => {
+          b.disabled = true;
+          if (bi === question.correct) b.classList.add('correct');
+          if (bi === ai && ai !== question.correct) b.classList.add('wrong');
+        });
+        const correct = question.interactive ? true : ai === question.correct;
+        if (question.interactive) { [...answers.children].forEach(b => b.classList.add('correct')); }
+        if (correct) { tone(784,.15,'triangle',.095); tone(1175,.20,'square',.075,.08); burst(eClientX(button), eClientY(button), ['✨','🌸','💗'], 5); } else jingle('error');
+        feedback.className = `feedback ${correct ? 'good' : 'bad'}`;
+        feedback.textContent = question.interactive ? `💗 ${question.explain}` : (correct ? `✓ ${question.explain}` : `✕ Chưa đúng. Đáp án đúng: ${question.a[question.correct]}.`);
+        const score = quizAnswers.filter((value, idx) => value !== null && (questions[idx].interactive || value === questions[idx].correct)).length;
+        $('quizScore').textContent = `Đúng ${score}/3`;
+        const answered = quizAnswers.every(value => value !== null);
+        if (answered) {
+          const passed = score >= 2;
+          $('quizMessage').textContent = passed ? `Tuyệt vời! Bạn đúng ${score}/3 câu — đã qua trò 1/3.` : `Bạn đúng ${score}/3 câu. Cần ít nhất 2 câu đúng để mở khóa. Hãy thử lại nhé!`;
+          $('quizContinue').disabled = !passed;
+          if (passed) { completed[0] = true; updateProgress(); celebrate(eClientX($('quizMessage')), eClientY($('quizMessage'))); }
+        }
+      });
+      answers.appendChild(button);
+    });
+    card.append(answers, feedback); quizHost.appendChild(card);
+  });
+  $('quizContinue').addEventListener('click', () => { if (completed[0]) setStage(1); });
+
+  // Memory match: 8 cards, 4 pairs.
+  const symbols = ['🌷','💗','🦋','🌸'];
+  let deck = [], firstCard = null, lockBoard = false, matchedPairs = 0, moves = 0;
+  function initMemory() {
+    deck = [...symbols, ...symbols].map((symbol, i) => ({ symbol, id: i }));
+    for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+    const grid = $('memoryGrid'); grid.innerHTML = ''; firstCard = null; lockBoard = false; matchedPairs = 0; moves = 0;
+    $('memoryScore').textContent = 'Đã ghép 0/4 cặp'; $('movesStat').textContent = 'Lượt lật: 0'; $('memoryContinue').disabled = true;
+    deck.forEach((item, index) => {
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'memory-card'; btn.textContent = '♡'; btn.setAttribute('aria-label', `Thẻ ${index + 1}, úp`); btn.dataset.index = index;
+      btn.addEventListener('click', () => flipCard(btn, item)); grid.appendChild(btn);
+    });
+  }
+  function flipCard(btn, item) {
+    if (lockBoard || btn.classList.contains('revealed') || btn.classList.contains('matched')) return;
+    btn.classList.add('revealed'); btn.textContent = item.symbol; btn.setAttribute('aria-label', `Thẻ ${Number(btn.dataset.index) + 1}, ${item.symbol}`);
+    if (!firstCard) { firstCard = { btn, item }; return; }
+    moves++; $('movesStat').textContent = `Lượt lật: ${moves}`;
+    if (firstCard.item.symbol === item.symbol) {
+      firstCard.btn.classList.add('matched'); btn.classList.add('matched'); firstCard.btn.disabled = true; btn.disabled = true;
+      tone(880,.16,'triangle',.10); tone(1319,.22,'square',.075,.08); burst(eClientX(btn),eClientY(btn),['🌷','✨','🦋'],7);
+      matchedPairs++; $('memoryScore').textContent = `Đã ghép ${matchedPairs}/4 cặp`; $('memoryMessage').textContent = matchedPairs === 4 ? 'Xuất sắc! Bạn đã ghép đủ 4 cặp — qua trò 2/3!' : 'Tìm được một cặp rồi! Tiếp tục nhé 💗';
+      firstCard = null;
+      if (matchedPairs === 4) { completed[1] = true; $('memoryContinue').disabled = false; updateProgress(); celebrate(eClientX(btn),eClientY(btn)); }
+    } else {
+      lockBoard = true; const prior = firstCard; firstCard = null;
+      window.setTimeout(() => {
+        [prior.btn, btn].forEach(el => { el.classList.remove('revealed'); el.textContent = '♡'; el.setAttribute('aria-label', `Thẻ ${Number(el.dataset.index) + 1}, úp`); });
+        lockBoard = false;
+      }, 720);
+    }
+  }
+  initMemory();
+  $('memoryContinue').addEventListener('click', () => { if (completed[1]) setStage(2); });
+
+  // Catch hearts, 15-second timed game.
+  let catchRunning = false, catchCount = 0, timeLeft = 15, tickHandle = null, spawnHandle = null, endTime = 0;
+  function updateCatchScore() { $('catchScore').textContent = `💗 ${catchCount}/10 tim`; }
+  function spawnHeart() {
+    if (!catchRunning) return;
+    const area = $('catchArea');
+    const heart = document.createElement('button'); heart.type = 'button'; heart.className = 'catch-heart'; heart.textContent = ['💗','💖','💕','💘','🌸','🌼','☁️','🎁','🦋','⭐','🍓','🐰','🧁','🌈'][Math.floor(Math.random()*14)]; heart.style.setProperty('--float-speed',`${.7+Math.random()*.9}s`); heart.style.fontSize=`${28+Math.random()*13}px`;
+    const maxX = Math.max(10, area.clientWidth - 52), maxY = Math.max(10, area.clientHeight - 58);
+    heart.style.left = `${10 + Math.random() * (maxX - 10)}px`; heart.style.top = `${18 + Math.random() * (maxY - 18)}px`;
+    heart.setAttribute('aria-label','Bắt trái tim');
+    heart.addEventListener('click', () => {
+      if (!catchRunning || heart.dataset.caught) return;
+      heart.dataset.caught = '1'; catchCount++; tone(700+catchCount*28,.13,'square',.085); tone(1050+catchCount*18,.10,'triangle',.05,.035); burst(eClientX(heart),eClientY(heart),['💗','✨','🌸','⭐','🎉'],6); updateCatchScore(); heart.textContent = '✨'; heart.style.transform = 'scale(1.4)';
+      window.setTimeout(() => heart.remove(), 100);
+      if (catchCount >= 10) finishCatch(true);
+    });
+    area.appendChild(heart); window.setTimeout(() => heart.remove(), 1250);
+  }
+  function startCatch() {
+    if (catchRunning) return;
+    catchRunning = true; jingle('spin'); catchCount = 0; timeLeft = 15; endTime = Date.now() + 15000;
+    $('catchArea').querySelectorAll('.catch-heart').forEach(el => el.remove()); $('catchHint').hidden = true;
+    $('catchStart').disabled = true; $('catchStart').textContent = 'Đang chơi…'; $('catchMessage').textContent = 'Nhanh tay nào! Bắt đủ 10 tim nhé.'; updateCatchScore();
+    $('timerText').textContent = '⏱ 15 giây'; $('timerFill').style.width = '100%'; spawnHeart(); spawnHandle = window.setInterval(spawnHeart, 420);
+    tickHandle = window.setInterval(() => {
+      timeLeft = Math.max(0, (endTime - Date.now()) / 1000);
+      $('timerText').textContent = `⏱ ${Math.ceil(timeLeft)} giây`; $('timerFill').style.width = `${timeLeft / 15 * 100}%`;
+      if (timeLeft <= 0) finishCatch(catchCount >= 10);
+    }, 80);
+  }
+  function finishCatch(won) {
+    if (!catchRunning) return; catchRunning = false;
+    window.clearInterval(tickHandle); window.clearInterval(spawnHandle);
+    $('catchArea').querySelectorAll('.catch-heart').forEach(el => el.remove()); $('catchStart').disabled = false;
+    if (won) {
+      completed[2] = true; celebrate(); $('catchMessage').textContent = `Tuyệt vời! Bạn bắt được ${catchCount} tim — đã qua đủ 3/3 trò!`; $('catchStart').textContent = 'Đã hoàn thành ✓'; $('catchStart').disabled = true;
+      updateProgress(); setTimeout(() => setStage(3), 700);
+    } else {
+      $('catchMessage').textContent = `Bạn bắt được ${catchCount}/10 tim. Thử lại để mở khóa vòng quay nhé!`;
+      $('catchStart').textContent = 'Chơi lại 15 giây'; $('catchHint').hidden = false; $('catchHint').textContent = 'Chạm nhanh vào trái tim 💞';
+    }
+  }
+  $('catchStart').addEventListener('click', startCatch);
+
+  // Nine cute gift boxes: blink the values for 2 seconds, hide them, then swap positions repeatedly.
+  const giftValues = [5,20,20,50,50,50,80,80,100];
+  let giftPhase = 'memorize', giftChosen = false, giftPrize = null;
+  let giftOrder = giftValues.map((value,index)=>({value,id:index}));
+  const giftGrid = $('giftGrid');
+  function shuffle(items) {
+    const a = [...items];
+    for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  function renderGiftBoxes(showValues=false, chosenId=null, revealAll=false) {
+    giftGrid.innerHTML = '';
+    giftOrder.forEach((gift,index)=>{
+      const btn=document.createElement('button'); btn.type='button'; btn.className='gift-box';
+      btn.setAttribute('aria-label', revealAll || (showValues && giftPhase==='memorize') ? `Hộp ${index+1}: ${gift.value}k` : `Hộp quà số ${index+1}`);
+      const opened = revealAll || gift.id===chosenId;
+      if (opened) btn.classList.add(gift.id===chosenId?'chosen':'revealed');
+      btn.innerHTML = `<span class="bow">🎀</span><span class="value-label">${opened ? `${gift.value}k` : (showValues ? `${gift.value}k` : '✨')}</span><span class="box-number">${opened ? '🎉 QUÀ BÊN TRONG' : `HỘP QUÀ ${index+1}`}</span>`;
+      if (giftPhase!=='choose' || giftChosen) btn.disabled=true;
+      if (giftPhase==='choose' && !giftChosen) btn.addEventListener('click',()=>chooseGift(gift.id));
+      giftGrid.appendChild(btn);
+    });
+  }
+  function setupGifts() {
+    giftOrder = giftValues.map((value,index)=>({value,id:index})); giftPhase='memorize'; giftChosen=false; giftPrize=null;
+    $('giftStep').textContent='1'; $('giftMessage').textContent='🎁 Có 9 hộp quà: 5k × 1, 20k × 2, 50k × 3, 80k × 2 và 1 HỘP ĐẶC BIỆT 100k! Ghi nhớ thật nhanh rồi chọn một hộp may mắn nhé 💗';
+    $('giftValues').hidden=false; $('giftAction').hidden=false; $('giftAction').disabled=false; $('giftAction').textContent='💖 Bắt đầu chọn quà';
+    $('ticketCard').hidden=true; renderGiftBoxes(true);
+  }
+  $('giftAction').addEventListener('click',()=>{
+    if (giftPhase==='memorize') {
+      giftPhase='flashing'; $('giftStep').textContent='2';
+      $('giftMessage').textContent='Nhìn nhanh nhé! Giá trị quà đang lấp lánh trong 2 giây… ✨';
+      $('giftAction').disabled=true; $('giftAction').textContent='✨ Đang lấp lánh…';
+      renderGiftBoxes(true);
+      const flashBoxes=[...giftGrid.querySelectorAll('.gift-box')];
+      flashBoxes.forEach((b,i)=>{ b.classList.add('value-flash'); setTimeout(()=>tone([523,587,659,784,880][i%5],.10,'sine',.045),i*35); });
+      setTimeout(()=>{
+        $('giftValues').hidden=true; giftPhase='shuffle'; $('giftStep').textContent='3';
+        $('giftMessage').textContent='Úm ba la! Giá trị đã đóng lại — nhìn theo từng hộp nhé, chúng sẽ đổi chỗ qua lại và nhanh dần! 💫';
+        renderGiftBoxes(false);
+        let shuffleCount=0, shuffleTimer=null;
+        const shuffleDurations=[520,460,400,340,290,245,205,170,140,115];
+        function shuffleStep(){
+          const before=[...giftGrid.querySelectorAll('.gift-box')].map(el=>el.getBoundingClientRect());
+          giftOrder=shuffle(giftOrder); renderGiftBoxes(false);
+          const after=[...giftGrid.querySelectorAll('.gift-box')];
+          after.forEach((el,i)=>{
+            const old=before.findIndex(r=>Math.abs(r.left-el.getBoundingClientRect().left)<2 && Math.abs(r.top-el.getBoundingClientRect().top)<2);
+            const from=before[i]; const to=el.getBoundingClientRect();
+            // Visibly slide every box between grid positions, then settle into the new order.
+            const prior=before[Math.min((i+shuffleCount+1)%before.length,before.length-1)];
+            const dx=(Math.random()>.5?1:-1)*(22+Math.random()*28);
+            const dy=(Math.random()>.5?1:-1)*(10+Math.random()*20);
+            el.animate([{transform:`translate(${dx}px,${dy}px) scale(.94)`,filter:'brightness(1.2)'},{transform:'translate(0,0) scale(1)',filter:'brightness(1)'}],{duration:shuffleDurations[Math.min(shuffleCount,shuffleDurations.length-1)],easing:'cubic-bezier(.2,.8,.2,1)'});
+          });
+          tone([330,392,440,523,587,659,698,784][Math.floor(Math.random()*8)],.08,'triangle',.055);
+          shuffleCount++;
+          if(shuffleCount<22){ shuffleTimer=setTimeout(shuffleStep,shuffleDurations[Math.min(shuffleCount,shuffleDurations.length-1)]); }
+          else { giftOrder=shuffle(giftOrder); giftPhase='choose';
+            $('giftMessage').textContent='Hộp quà đã đổi chỗ xong! 🌟 Đừng quên săn hộp đặc biệt 100k — hãy chọn một chiếc hộp nhé! 💗';
+            $('giftAction').hidden=true; renderGiftBoxes(false); }
+        }
+        shuffleTimer=setTimeout(shuffleStep,80);
+        /* End after a series of increasingly fast, clearly visible swaps. */
+        return;
+        /* legacy interval removed */
+        setTimeout(()=>{
+          clearTimeout(shuffleTimer); giftGrid.classList.remove('gift-shuffling'); giftOrder=shuffle(giftOrder); giftPhase='choose';
+        },3200);
+      },2000);
+    }
+  });
+  function chooseGift(id) {
+    if (giftChosen || giftPhase!=='choose' || !completed.every(Boolean)) return;
+    giftChosen=true; giftPhase='result'; const selected=giftOrder.find(g=>g.id===id); giftPrize=selected.value;
+    $('giftMessage').textContent='Đang mở hộp quà… ✨'; $('giftGrid').querySelectorAll('.gift-box').forEach(b=>b.disabled=true);
+    // Âm thanh hồi hộp: tiếng trầm dồn nhịp, crescendo rồi bùng nổ khi mở quà.
+    [196,220,262,330,392,523,659,784].forEach((n,i)=>tone(n,.20,'sawtooth',.065,i*.105));
+    tone(110,.65,'sine',.12,.30);
+    const selectedIndex=giftOrder.findIndex(g=>g.id===id); const chosenBtn=giftGrid.children[selectedIndex];
+    chosenBtn.classList.add('chosen'); chosenBtn.innerHTML='<span class="bow">🎀</span><span class="value-label">🔐</span><span class="box-number">ĐANG MỞ…</span>';
+    jingle('spin');
+    // Suspense sequence before revealing the chosen gift and all remaining values.
+    let ticks=0; const suspense=setInterval(()=>{ ticks++; tone([440,494,523,587,659,784][ticks%6],.11,'sine',.07); chosenBtn.style.transform=`translateY(${ticks%2?-5:2}px) rotate(${ticks%2?-2:2}deg)`; if(ticks>=12){clearInterval(suspense); revealGiftResult(id,selectedIndex,chosenBtn);} },220);
+  }
+  function revealGiftResult(id,selectedIndex,chosenBtn) {
+    chosenBtn.style.transform=''; chosenBtn.classList.remove('chosen'); void chosenBtn.offsetWidth; chosenBtn.classList.add('chosen','prize-pop');
+    chosenBtn.innerHTML=`<span class="bow">🎀</span><span class="value-label">${giftPrize}k</span><span class="box-number">🎉 QUÀ CỦA BẠN</span>`;
+    // Reveal every other box only after the selected prize has opened.
+    [...giftGrid.children].forEach((btn,index)=>{
+      const gift=giftOrder[index]; btn.disabled=true;
+      if(index!==selectedIndex){btn.classList.remove('chosen');btn.classList.add('revealed');btn.innerHTML=`<span class="bow">🎀</span><span class="value-label">${gift.value}k</span><span class="box-number">HỘP ${index+1}</span>`;}
+    });
+    $('giftMessage').textContent=`BẤT NGỜ CHƯA! Bạn nhận được ${giftPrize}k! 🎊 Các hộp quà còn lại cũng đã được mở.`;
+    $('giftStep').textContent='🎉'; celebrate();
+    // Fanfare lớn hơn, nhiều lớp âm thanh và điểm nhấn trầm khi nắp quà bung ra.
+    [523,659,784,1047,1319,1568].forEach((n,i)=>tone(n,.42,'triangle',.13,i*.065));
+    [130.8,196,261.6].forEach((n,i)=>tone(n,.55,'sawtooth',.075,.03+i*.06));
+    tone(2093,.48,'sine',.085,.28); jingle('spin');
+    const token=`BLOOM20-${new Date().toISOString().slice(0,10).replaceAll('-','')}-${Math.random().toString(36).slice(2,8).toUpperCase()}`;
+    const ticket=`Phiếu: ${token}\nMini game: Bloom & Heart 20/10\nTiến trình: 3/3 trò chơi hoàn thành\nHộp quà đã chọn: ${selectedIndex+1}\nPhần thưởng hiển thị: ${giftPrize}k\nGhi chú: Chưa xác minh bởi máy chủ.`;
+    $('ticketCode').textContent=ticket; $('ticketCard').hidden=false;
+  }
+    $('copyTicket').addEventListener('click', async () => {
+    const text = $('ticketCode').textContent;
+    try { await navigator.clipboard.writeText(text); $('copyStatus').textContent = 'Đã sao chép!'; }
+    catch { const range = document.createRange(); range.selectNodeContents($('ticketCode')); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range); $('copyStatus').textContent = 'Đã chọn nội dung — hãy sao chép thủ công.'; }
+  });
+  updateProgress();
+})();
+</script>
+</body>
+</html>
